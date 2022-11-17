@@ -19,6 +19,7 @@ router.post(
     check("password", "Please enter a password with 6 or more chars").isLength({
       min: 4,
     }),
+    check("dob", "Date of Birth is required").not().isEmpty(),
     check("aadhaar", "Please upload your aadhaar").not().isEmpty(),
     check("photo", "Please upload your profile picture").not().isEmpty(),
   ],
@@ -28,7 +29,14 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, mobile, address, email, password, aadhaar, photo } = req.body;
+    const { name, mobile, address, email, password, dob, aadhaar, photo } =
+      req.body;
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+      return res.status(403).json({ errors: [{ msg: "User already exists" }] });
+    }
 
     try {
       const aadhaarBuf = Buffer.from(aadhaar);
@@ -40,6 +48,7 @@ router.post(
         address: address,
         email: email,
         password: password,
+        dob: dob,
         aadhaar: aadhaarBuf,
         photo: photoBuf,
       });
@@ -70,13 +79,14 @@ router.get("/", auth, async (req, res) => {
     let aadhaar64 = user.aadhaar.toString();
     let photo64 = user.photo.toString();
 
-    const { name, mobile, address, email } = user;
+    const { name, mobile, address, email, dob } = user;
 
     const profile = {
       name: name,
       mobile: mobile,
       address: address,
       email: email,
+      dob: dob,
       aadhaar: aadhaar64,
       photo: photo64,
     };
